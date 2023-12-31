@@ -1,0 +1,18 @@
+nop  // no operation				0b0          0x0
+mov  // move						0b1          0x1
+push // push to the stack			0b10         0x2
+pop  // pop the stack				0b11         0x3
+add  // add							0b100        0x4
+sub  // subtract					0b101        0x5
+and  // binary and					0b110        0x6
+or   // binary or					0b111        0x7
+xor  // binary xor					0b1000       0x8
+not  // binary not					0b1001       0x9
+in   // input from devices			0b1010       0xA
+out  // output to devices			0b1011       0xB
+cmp  // compare two registers		0b1100       0xC
+jmp  // jump to address				0b1101       0xD
+jlt  // jump if less than			0b1110       0xE
+jgt  // jump if greater than		0b1111       0xF
+je   // jump if equal				0b10000      0x1F
+halt // halts the program			0b10001      0x2F

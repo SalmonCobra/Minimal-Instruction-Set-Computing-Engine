@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace MIS // Note: actual namespace depends on the project name.
+namespace MISC // Note: actual namespace depends on the project name.
 {
-    internal class MISRUNNER
+    internal class MISCRUNNER
     {
         static void Main(string[] args)
         {

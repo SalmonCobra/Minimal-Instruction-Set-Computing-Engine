@@ -1,37 +1,44 @@
-﻿using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-
-namespace MISC
+﻿namespace MISC
 {
-    internal class MISC_Runner
+    internal class MISC_Engine
     {
+
+        #region Public Variables
         //config variables
 
-        public static string[] ram = { };
+        public static long[] ram = Array.Empty<long>();
+        public static long[] registers = Array.Empty<long>();
+
+        public static long[] stack = Array.Empty<long>();
+        public static int stackAddress = 0;
+
+        public static int[] display = new int[2];
+
         public static int bits = 0;
         public static int rows = 0;
         public static int confRegisters = 0;
         public static double regAddressLength = 0d;
-        public static int[] display = new int[2];
+
         public static bool configStatus = false;
         public static bool debug = false;
-
-        public static string[] registers = { };
-
+        #endregion
+        public enum Register : int
+        {
+            PC,
+            None,
+            EAX,
+            EBX
+        }
         static void Main(string[] args)
         {
             Configerator();
-            WriteRom();
-            Console.WriteLine("Query: Run Program.bin?");
-            Console.ReadLine();
-            Console.Clear();
-
         }
-
+        #region Methods
         // Configue the emulator from the config file.
-        public static void Configerator()
+        private static void Configerator()
         {
-            int opcodeLength = 5;
+            #region Lexer
+            int additional_registers = 4;
             configStatus = true;
             Console.WriteLine("Info: Configuring Emulator.");
             string[] config = System.IO.File.ReadAllLines("C:\\Users\\Benjamin\\Desktop\\MISC\\Minimal-Instruction-Set-Emulator\\MISC Emulator\\MISC\\config.conf");
@@ -100,87 +107,104 @@ namespace MISC
                     }
                 }
             }
-            // Configure Registers.
-            Console.WriteLine("Info: Instanciating Registers.");
-            registers = new string[confRegisters + 4];
-            for (int i = 0; i < registers.Length; i++)
-            {
-                for (int j = 0; j < bits + opcodeLength + regAddressLength * 2; j++)
-                {
-                    registers[i] += "0";
-                }
-                if (debug) { Console.WriteLine("Debug: " + registers[i].ToString()); }
-            }
-            Console.WriteLine("Info: Finished Instanciating Registers!");
+            #endregion
 
-
-            // Configure and Instanciate Ram.
-
+            #region Initilizers
             if (configStatus)
             {
-                Console.WriteLine("Info: Instanciating RAM.");
-                ram = new string[rows + (display[0] * display[1]) / bits];
+                // Configure and Initializing Registers.
+                Console.WriteLine("Info: Initializing Registers.");
+                registers = new long[confRegisters + additional_registers];
+                for (int i = 0; i < registers.Length; i++)
+                {
+                    registers[i] = 0;
+                    if (debug) { Console.WriteLine("Debug: " + registers[i].ToString()); }
+                }
+                Console.WriteLine("Info: Finished Initializing Registers!");
+
+
+                // Configure and Initializing Ram.
+
+                Console.WriteLine("Info: Initializing RAM.");
+                ram = new long[rows + (display[0] * display[1]) / bits];
                 for (int i = 0; i < ram.Length; i++)
                 {
-                    string nopdata = "";
-                    for (int j = 0; j < bits + opcodeLength + regAddressLength * 2; j++) // FIX: need to account for register count too!
-                    {
-                        nopdata += "0";
-                    }
-                    ram[i] = nopdata;
-                    if (debug) { Console.WriteLine("Debug: " + ram[i].ToString()); }
-                    if (i == ram.Length - 1)
-                    {
-                        Console.WriteLine("Info: Finished Instanciating RAM!");
-                    }
-                    
+                    ram[i] = 0;
+                    if (debug) { Console.WriteLine("Debug: " + ram[i].ToString()); }                   
                 }
-            }
+                Console.WriteLine("Info: Finished Initializing RAM!");
 
-
-            // Display completion status of configurator to console.
-            if (configStatus)
-            {
                 Console.WriteLine("Info: Configuration Complete");
-            }
-            else
+            } else
             {
                 Console.WriteLine("Error: Configuration Failed! Read log for more details");
             }
-        }
+            #endregion
 
-        // Write the binary file to the ram.
-        private static void WriteRom()
-        {
+            #region Load Operations
+            // Load Rom
             if (configStatus)
             {
                 string[] binary = System.IO.File.ReadAllLines("C:\\Users\\Benjamin\\Desktop\\MISC\\Minimal-Instruction-Set-Emulator\\MISC Emulator\\MISC\\Program.bin");
                 int writeRamIndex = 0;
-                Console.WriteLine("Info: Writing ROM to RAM Started");
+                Console.WriteLine("Info: Loading ROM");
                 if (debug) { Console.WriteLine("Binaries:"); }
                 foreach (string line in binary)
                 {
-                    string code = "";
+                    string precode = "";
+                    long code = 0b0;
                     if (line.Contains(" ") || line.Contains("#"))
                     {
-                        code = line.Substring(0, line.IndexOf("#"));
+                        precode = line.Substring(0, line.IndexOf("#"));
                     }
                     else
                     {
-                        code = line;
+                        code = Convert.ToInt64(line.Replace("-", "").Replace("0b", "").Replace(" ", ""), 2);
                     }
-                    if (code.Contains("-") || code.Contains("0b") || code.Contains(" "))
+                    if (precode.Contains("-") || precode.Contains("0b") || precode.Contains(" "))
                     {
-                        code = code.Replace("-", "").Replace("0b", "").Replace(" ", "");
+                        code = Convert.ToInt64(precode.Replace("-", "").Replace("0b", "").Replace(" ", ""), 2);
                     }
+
                     ram[writeRamIndex] = code;
                     if (debug) { Console.WriteLine("Debug: " + code); }
                     writeRamIndex++;
                 }
-                Console.WriteLine("Info: Finished Writing to RAM");
+                Console.WriteLine("Info: Finished Loading ROM");
             }
-
+            #endregion
         }
 
+        #region RAM Methods
+        public static string opcode = String.Empty;
+        public static string regDest = String.Empty;
+        public static string regSrc = String.Empty;
+        public static string data = String.Empty;
+        public static void ReadRam()
+        {
+            string binaryRam = Convert.ToString(ram[registers[(int)Register.PC]], 2);
+            opcode = binaryRam.Substring(0, 4);
+            regDest = binaryRam.Substring(5, 9);
+            regSrc = binaryRam.Substring(6, 14);
+            data = binaryRam.Substring(14, 47);
+        }
+        public static void ReadRam(bool resetVars)
+        {
+            if (resetVars) { opcode = ""; regDest = ""; regSrc = ""; data = ""; }
+        }
+        #endregion
+
+        #region Register Methods
+        public static long ReadReg(string register)
+        {
+            return Convert.ToInt64(register);
+        }
+        public static void WriteReg(string register, long data)
+        {
+            registers[Convert.ToInt32(register)] = data;
+        }
+        #endregion
+
+        #endregion
     }
 }

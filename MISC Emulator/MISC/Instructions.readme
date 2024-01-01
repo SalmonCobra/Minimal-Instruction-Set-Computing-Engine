@@ -19,15 +19,17 @@ jmp  // jump to address             0b1111       0xF
 jlt  // jump if less than           0b10000      0x10
 jgt  // jump if greater than        0b10001      0x11
 je   // jump if equal               0b10010      0x12
-halt // halts the program           0b10011      0x13
+ret  // return after subroutine     0b10011      0x13
+halt // halts the program           0b10100      0x14
 
 ----------------------Registers-----------------------
 
 // The amount of registers can be configured. Refer to config.conf.
 
-null // no register                                         0b0          0x0
-eax  // accumulator register A: Results are stored here!    0b1          0x1
-ebx  // accumulator register B                              0b10         0x2
+pc   // program counter                                     0b0
+null // no register                                         0b1          0x0
+eax  // accumulator register A: Results are stored here!    0b10          0x1
+ebx  // accumulator register B                              0b11         0x2
 
 
 ------------------------Notes-------------------------

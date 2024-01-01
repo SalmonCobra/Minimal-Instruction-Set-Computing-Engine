@@ -1,4 +1,6 @@
-﻿namespace MISC
+﻿using System.ComponentModel.Design;
+
+namespace MISC
 {
     internal class MISC_Engine
     {
@@ -21,6 +23,32 @@
 
         public static bool configStatus = false;
         public static bool debug = false;
+
+        public static Dictionary<int, string> Opcodes = new Dictionary<int, string>()
+        {
+            { 0, "nop" },
+            { 1, "mov" },
+            { 10, "push" },
+            { 11, "pop" },
+            { 100, "add" },
+            { 101, "sub" },
+            { 110, "and" },
+            { 111, "or" },
+            { 1000, "xor" },
+            { 1001, "not" },
+            { 1010, "als" },
+            { 1011, "ars" },
+            { 1100, "in" },
+            { 1101, "out" },
+            { 1110, "cmp" },
+            { 1111, "jmp" },
+            { 10000, "jlt" },
+            { 10001, "jgt" },
+            { 10010, "je" },
+            { 10011, "ret" },
+            { 10100, "halt" }
+        };
+
         #endregion
         public enum Register : int
         {
@@ -32,6 +60,7 @@
         static void Main(string[] args)
         {
             Configerator();
+            DebugRam(0, true);
         }
         #region Methods
         // Configue the emulator from the config file.
@@ -122,6 +151,16 @@
                 }
                 Console.WriteLine("Info: Finished Initializing Registers!");
 
+                
+                // Configure and Initialize Stack
+                Console.WriteLine("Info: Initializing Stack.");
+                stack = new long[64000]; // 2MB when set to 32 bit
+                for (int i = 0;i < stack.Length;i++)
+                {
+                    stack[i] = 0;
+                    if (debug) { Console.WriteLine("Debug: " + stack[i].ToString()); }
+                }
+                Console.WriteLine("Info: Finished Initializing Stack");
 
                 // Configure and Initializing Ram.
 
@@ -139,6 +178,7 @@
             {
                 Console.WriteLine("Error: Configuration Failed! Read log for more details");
             }
+
             #endregion
 
             #region Load Operations
@@ -176,6 +216,7 @@
         }
 
         #region RAM Methods
+
         public static string opcode = String.Empty;
         public static string regDest = String.Empty;
         public static string regSrc = String.Empty;
@@ -183,15 +224,88 @@
         public static void ReadRam()
         {
             string binaryRam = Convert.ToString(ram[registers[(int)Register.PC]], 2);
-            opcode = binaryRam.Substring(0, 4);
-            regDest = binaryRam.Substring(5, 9);
-            regSrc = binaryRam.Substring(6, 14);
-            data = binaryRam.Substring(14, 47);
+            opcode = binaryRam.Substring(0, 5);
+            regDest = binaryRam.Substring(5, 5);
+            regSrc = binaryRam.Substring(10, 5);
+            data = binaryRam.Substring(15, 32);
         }
         public static void ReadRam(bool resetVars)
         {
             if (resetVars) { opcode = ""; regDest = ""; regSrc = ""; data = ""; }
         }
+        public static void DebugRam(int address)
+        {
+            Console.WriteLine(Convert.ToString(ram[address], 2));
+        }
+        public static void DebugRam(int address, bool H)
+        {
+            if (H)
+            {
+                string PC = Convert.ToString(registers[0], 2);
+                WriteReg(registers[(int)Register.PC].ToString(), address);
+                ReadRam();
+                if (Opcodes.ContainsKey(Convert.ToInt32(opcode)))
+                {
+                    Console.Write(Opcodes[Convert.ToInt32(opcode)] + "-");
+                } else
+                {
+                    Console.WriteLine("Error: Not an Opcode");
+                    Console.Write(">" + opcode + "< ");
+                }
+                var containsDefaultReg = false;
+                switch (regDest)
+                {
+                    case "00000":
+                        Console.Write("Program_Counter-");
+                        containsDefaultReg = true;
+                    break;
+                    case "00001":
+                        Console.Write("Null-");
+                        containsDefaultReg = true;
+                        break;
+                    case "00010":
+                        Console.Write("EAX-");
+                        containsDefaultReg = true;
+                        break;
+                    case "00011":
+                        Console.Write("EBX-");
+                        containsDefaultReg = true;
+                        break;
+                }
+                if (!containsDefaultReg) { Console.Write(Convert.ToInt64(regDest, 2) - 2 + "-"); }
+
+                containsDefaultReg = false;
+                switch (regSrc)
+                {
+                    case "00000":
+                        Console.Write("Program_Counter-");
+                        containsDefaultReg = true;
+                        break;
+                    case "00001":
+                        Console.Write("Null-");
+                        containsDefaultReg = true;
+                        break;
+                    case "00010":
+                        Console.Write("EAX-");
+                        containsDefaultReg = true;
+                        break;
+                    case "00011":
+                        Console.Write("EBX-");
+                        containsDefaultReg = true;
+                        break;
+                }
+                if (!containsDefaultReg) { Console.Write(Convert.ToInt64(regSrc, 2) - 2 + "-"); }
+                Console.Write($"{data}     Base10: {Convert.ToInt64(data, 2)}");
+                ReadRam(true);
+                WriteReg(registers[(int)Register.PC].ToString(), Convert.ToInt64(PC));
+            }
+            else
+            {
+                Console.WriteLine(Convert.ToString(ram[address], 2));
+            }
+
+        }
+
         #endregion
 
         #region Register Methods
@@ -203,6 +317,7 @@
         {
             registers[Convert.ToInt32(register)] = data;
         }
+
         #endregion
 
         #endregion

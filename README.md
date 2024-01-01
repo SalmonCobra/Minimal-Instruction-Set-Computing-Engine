@@ -50,7 +50,8 @@ Formula:
 | jlt | Jump if less than.  | `0b10000` |
 | jgt | Jump if greater than. | `0b10001` |
 | je | Jump if equal. | `0b10010` |
-| halt | Halts the program. | `0b10011` |
+| ret | Return after Subroutine | `0b10011` |
+| halt | Halts the program. | `0b10100` |
 
 
 ## Registers
